@@ -1,84 +1,123 @@
 import discord
-from discord.ext import commands, tasks
-from datetime import time
+from discord.ext import commands
+import os
 
-intents=discord.Intents.all()
-bot=commands.Bot(command_prefix=".", intents=intents)
+class Bot_modificado(commands.Bot):
+    def __init__(self):
+        super().__init__(command_prefix='.', intents=discord.Intents.all())
+    async def setup_hook(self):
+        self.add_view(View_persistente())
+bot=Bot_modificado()
+
+async def carregar_cogs():
+    for arquivo in os.listdir('cogs'):
+        if arquivo.endswith('.py'):
+            await bot.load_extension(f'cogs.{arquivo[:-3]}')
+    
 
 @bot.event
 async def on_ready():
-    sincs = await bot.tree.sync()
-    print(f'{len(sincs)} comandos sincronizados!')
-    enviar_mensagem.start()
-    print("Bot inicializado com sucesso")
-
-
-@bot.event
-async def on_message(msg:discord.Message):
-    if msg.author.bot:
-        return
-    await bot.process_commands(msg)
-    # await msg.reply(f"O usuário {msg.author.mention} enviou uma mensagem no canal {msg.channel.name}")
-
-
-@bot.event
-async def on_member_join(membro:discord.Member):
-    canal=bot.get_channel(1504252572502986902)
-    await canal.send(f"{membro.mention} entrou no servidor")
-
-
-@bot.event
-async def on_reaction_add(reacao:discord.Reaction, membro:discord.Member):
-    await reacao.message.reply(f"O membro {membro.name} reagiou a mensagem com {reacao.emoji}")
-    
+    await carregar_cogs()
+    print("Estou pronto!")
 
 @bot.command()
-async def somar(ctx:commands.Context, num1:float, num2:float):
-    resultado = num1 + num2
-    await ctx.send(f"A soma entre {num1} e {num2} é igual a {resultado}")
+async def ola(ctx:commands.Context):
+    usuario = ctx.author
+    canal = ctx.channel
+    await ctx.reply(f"Olá, {usuario.display_name}\nVocê está no canal: {canal.name}")
 
+
+@bot.command()
+async def falar(ctx:commands.Context, *,frase):
+    await ctx.send(frase)
 
 @bot.command()
 async def enviar_embed(ctx:commands.Context):
-    minha_embed = discord.Embed()
-    minha_embed.title = "Titulo da embed"
-    minha_embed.description = "Descrição da embed"
+    meu_embed=discord.Embed(title='Olá, Mundo!', description='Descrição :D')
+    
+    imagem_arquivo=discord.File('imagens/logo_metro.png', 'logo_metro.png')
+    meu_embed.set_image(url="attachment://logo_metro.png")
 
-    imagem=discord.File("imagens/logo_metro.png", "logo_metro.png")
-    minha_embed.set_image(url="attachment://logo_metro.png")
-    minha_embed.set_thumbnail(url="attachment://logo_metro.png")
+    thumb_arquivo=discord.File('imagens/fundo-tropical.png', 'fundo-tropial.png')
+    meu_embed.set_thumbnail(url="attachment://fundo-tropical.png")
 
-    minha_embed.set_footer(text="Esse é o footer da minha embed!")
+    meu_embed.set_footer(text='Este é o footer')
+    meu_embed.color=discord.Color.purple()
 
-    minha_embed.set_author(name="Goku", icon_url="https://scc10.com.br/wp-content/uploads/2025/12/Instinto-Superior-Goku-Manga-vs-Anime.webp", url="https://www.google.com.br/maps")
+    meu_embed.add_field(name='Moedas', value=10, inline=False)
+    meu_embed.add_field(name='Filme Favorito', value='DBS: Broly', inline=False)
+    meu_embed.add_field(name='Rank', value='Prata', inline=False)
 
-    await ctx.reply(embed=minha_embed, file=imagem)
+    await ctx.reply(files=[imagem_arquivo, thumb_arquivo],embed=meu_embed)
 
+@bot.command()
+async def enviar_botao(ctx:commands.Context):
+    async def resposta_botao(interact:discord.Interaction):
+        await interact.response.send_message('Botão Pressionado')
+        await interact.followup.send('Botão Pressionado de novo')
 
-@tasks.loop(time=time(20, 7))
-async def enviar_mensagem():
-    canal=bot.get_channel(1504242634233745450)
-    await canal.send("Mensagem programada por horário (USA)")
+    view = discord.ui.View()
+    botao = discord.ui.Button(label='Botão', style=discord.ButtonStyle.green)
+    botao.callback=resposta_botao
 
+    botao_url=discord.ui.Button(label='Meu canal', url='https://www.google.com.br/maps')
 
-@bot.tree.command()
-async def ola(interact:discord.Interaction):
-    await interact.response.defer()
-    await interact.followup.send("Pronto")
-
-@bot.tree.command()
-async def falar(interact:discord.Interaction, texto:str):
-    await interact.response.send_message(texto)
-
-
-@bot.tree.command()
-async def somar(interact:discord.Interaction, num1:int, num2:int):
-    resultado=num1+num2
-    await interact.response.send_message(f"O resultado de {num1} + {num2} é igual a {resultado}")
-
-@bot.tree.command()
-async def selecionar_membro(interact:discord.Interaction, membro:discord.Member):
-    await interact.response.send_message(f"Você selecionou o usuário {membro.mention}")
+    view.add_item(botao)
+    view.add_item(botao_url)
+    await ctx.reply(view=view)
 
 
-bot.run("MTUwNDI0MjEzMDg5NjI5MzkzOQ.G9bTFw.Lk4g1xnLQvnwiJ2U5Tz8NobARuAlPaplWqsNmc")
+
+@bot.command()
+async def jogo_favorito(ctx:commands.Context):
+    async def select_resposta(interact:discord.Interaction):
+        escolha=interact.data['values'][0]
+        jogos={'1':'Minecraft', '2':'GTA V', '3':'Mario'}
+        jogo_escolhido = jogos[escolha]
+        await interact.response.send_message(f'Você escolheu {jogo_escolhido}')
+
+
+    menuSelecao=discord.ui.Select(placeholder='Selecione uma opção')
+    opcoes=[
+        discord.SelectOption(label='Minecraft', value='1'),
+        discord.SelectOption(label='GTA V', value='2'),
+        discord.SelectOption(label='Mario', value='3')
+    ]
+    menuSelecao.options=opcoes
+    menuSelecao.callback=select_resposta
+
+    view = discord.ui.View()
+    view.add_item(menuSelecao)
+    await ctx.send(view=view)
+
+@bot.event
+async def on_guild_channel_create(canal:discord.abc.GuildChannel):
+    await canal.send(f"Novo canal criado: {canal.name}")
+
+@bot.event
+async def on_member_join(membro:discord.Member):
+    canal = bot.get_channel(1504583787949068449)
+    meu_embed = discord.Embed(title=f'Bem vindo, {membro.name}!')
+    meu_embed.description='Aproveite a estadia!'
+    meu_embed.set_thumbnail(url=membro.avatar)
+
+    await canal.send(embed=meu_embed)
+
+@bot.event
+async def on_member_remove(membro:discord.Member):
+    canal = bot.get_channel(1504583787949068449)
+    await canal.send(f"{membro.display.name} Saiu do servidor...\nAté breve")
+
+class View_persistente(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+    @discord.ui.button(label='me aperte', custom_id='botao')
+    async def botao(self, interact:discord.Interaction, button):
+        await interact.response.send_message('O botão foi pressionado')
+
+@bot.command()
+async def gugu(ctx:commands.Context):
+    await ctx.reply(view=View_persistente())
+
+
+bot.run("MTUwNDI0MjEzMDg5NjI5MzkzOQ.GJPXlp.hWXBGyPVBs2GWcGz4Ytiu4uNnbprDQaiq0Efj4")
