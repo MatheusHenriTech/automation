@@ -99,6 +99,7 @@ async def daily(interaction: discord.Interaction):
 
 @bot.tree.command()
 async def donate_coins(interaction: discord.Interaction, receiver: discord.Member, coin:int):
+    
     embed = discord.Embed(
         title='Donate Coins',
         description='Here you can donate your coins',
@@ -129,6 +130,7 @@ async def donate_coins(interaction: discord.Interaction, receiver: discord.Membe
 
 @bot.tree.command()
 async def ranking(interaction: discord.Interaction):
+
     embed = discord.Embed(
         title='Ranking',
         description='Ranking of the most rich users',
@@ -155,3 +157,4 @@ async def ranking(interaction: discord.Interaction):
         await interaction.response.send_message(embed=embed)
 
 
+bot.run("MTUwNDI0MjEzMDg5NjI5MzkzOQ.G6UnZd.WYHgXr4O3bstO6QtmtStnG0r3sAyJHI5Yrgb3Y")
