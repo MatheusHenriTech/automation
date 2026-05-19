@@ -26,7 +26,7 @@ async def perfil(interaction: discord.Interaction):
 
     embed = discord.Embed(
         title="title",
-        color=discord.Color.darker_grey()
+        color=discord.Color.fuchsia()
     )
 
     embed.add_field(
@@ -68,25 +68,43 @@ async def on_message(message):
 
 @bot.tree.command()
 async def daily(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title='Daily awards',
+        description='get your awards right now!',
+        color=discord.Color.fuchsia()
+    )
+
     user_id = interaction.user.id
-    last_daily = datetime.now()
 
     if user_id not in users:
         users[user_id] = {
-            'coins':0
+            'coins':0,
+            'date':None
         }
 
-    users[user_id]['date'] = last_daily
-    if datetime.now() - last_daily <= timedelta(hours=24):
-        await interaction.response.send_message(f"You've already got the daily coins bonus", ephemeral=True)
-    else:
-        users[user_id]['coins'] += 100
-        coins = users[user_id]['coins']
+    last_daily = users[user_id].get('date')
+    now = datetime.now()
+    if last_daily is not None and now - last_daily < timedelta(hours=24):
+        embed.description="You've already got the daily coins bonus"
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    
+    users[user_id]['coins'] += 100
+    users[user_id]['date'] = now
 
-        await interaction.response.send_message(f'You just won 100 coins\nNow you have {coins} coins', ephemeral=True)
+    coins = users[user_id]['coins']
+
+    embed.description=f"You just won 100 coins\nNow you have {coins} coins"
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @bot.tree.command()
-async def share_coins(interaction: discord.Interaction, receiver: discord.Member, coin:int):
+async def donate_coins(interaction: discord.Interaction, receiver: discord.Member, coin:int):
+    embed = discord.Embed(
+        title='Donate Coins',
+        description='Here you can donate your coins',
+        color=discord.Color.fuchsia()
+    )
+
     user_id = interaction.user.id
     if user_id not in users:
         users[user_id] = {
@@ -94,7 +112,8 @@ async def share_coins(interaction: discord.Interaction, receiver: discord.Member
         }
     coins = users[user_id]['coins']
     if coin > coins or coin <= 0:
-        await interaction.response.send_message(f"Sorry, You ain't share this quantity of coins :/", ephemeral=True)
+        embed.description = f"Sorry, You ain't donate this quantity of coins :/"
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     receiver_id = receiver.id
     if receiver.id not in users:
@@ -104,8 +123,36 @@ async def share_coins(interaction: discord.Interaction, receiver: discord.Member
     users[user_id]['coins'] -= coin
     users[receiver_id]['coins'] += coin
 
-    await interaction.response.send_message(f"You've just donated {coin} coins to {receiver}")
+    embed.description = f"You've just donated {coins} coins to {receiver}"
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
+@bot.tree.command()
+async def ranking(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title='Ranking',
+        description='Ranking of the most rich users',
+        color=discord.Color.fuchsia()
+    )
 
-bot.run("MTUwNDI0MjEzMDg5NjI5MzkzOQ.G_IbOR.uXax0-a-umP-S0_uAwrxzyIde4try-6t52U5vE")
+    list_users = []
+    ranking_text = []
+    if users:
+        for p in users.items():
+            member = interaction.guild.get_member(p[0])
+            coins = p[1]['coins']
+            user = (member.display_name, coins)
+            list_users.append(user)
+            list_users.sort(key=lambda x: x[1], reverse=True)
+        for nome, coins in list_users:
+            txt = f'Name: {nome}\nCoins: {coins}'
+            ranking_text.append(txt)
+        final_text = '\n\n'.join(ranking_text)
+        embed.description = final_text
+        await interaction.response.send_message(embed=embed)
+    else:
+        embed.description='There no people here'
+        await interaction.response.send_message(embed=embed)
+
+
+# bot.run("MTUwNDI0MjEzMDg5NjI5MzkzOQ.G6UnZd.WYHgXr4O3bstO6QtmtStnG0r3sAyJHI5Yrgb3Y")
