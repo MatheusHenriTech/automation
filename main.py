@@ -155,4 +155,3 @@ async def ranking(interaction: discord.Interaction):
         await interaction.response.send_message(embed=embed)
 
 
-# bot.run("MTUwNDI0MjEzMDg5NjI5MzkzOQ.G6UnZd.WYHgXr4O3bstO6QtmtStnG0r3sAyJHI5Yrgb3Y")
