@@ -1,12 +1,13 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from datetime import datetime, timedelta
-from sqlalchemy import create_engine, Column, String, Integer, DateTime
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
+from badwords import bad_words
 
 load_dotenv()
 
@@ -30,6 +31,7 @@ class User(Base):
     username = Column(String)
     coins = Column(Integer, default=0)
     daily = Column(DateTime, default=None)
+
 
 def get_user(session, discord_user):
     usuario = session.query(User).filter_by(
@@ -61,14 +63,51 @@ async def on_member_join(member):
         session.commit()
     await member.send('Welcome to the server')
 
- 
+list_messages = {}
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
-    with Session() as session:
+    
+    badwords = bad_words
+    text = message.content.lower()
 
+    for word in text.split():
+        if word in bad_words:
+            await message.delete()
+            await message.channel.send(f"{message.author.mention}, Please, don't speak these type of words")
+            return
+
+    with Session() as session:
+        
         usuario = get_user(session, message.author)
+
+        user_id = message.author.id
+
+        if user_id not in list_messages:
+            list_messages[user_id] = []
+
+        user_messages = list_messages[user_id]
+
+        current_time = datetime.now(timezone.utc)
+        user_messages.append(message.created_at)
+        limit = current_time - timedelta(seconds=5)
+        excluded_times = []
+
+        for time in user_messages:
+            if time < limit:
+                excluded_times.append(time)
+
+        for time_excluded in excluded_times:
+            user_messages.remove(time_excluded)
+
+        if len(user_messages) >= 7:
+            await message.author.timeout(
+                timedelta(minutes=1),
+                reason="Spam detected"
+            )
+
+            await message.channel.send(f"{message.author.mention}, You just received a serious warning for spamming. You are muted for 1 minute")
 
         usuario.coins += 1
         session.commit()
