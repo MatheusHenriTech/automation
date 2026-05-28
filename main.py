@@ -13,7 +13,7 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
 permissions = discord.Intents.default().all()
-bot = commands.Bot(command_prefix='', intents=permissions)
+bot = commands.Bot(command_prefix='/', intents=permissions)
 
 
 async def main():
@@ -24,7 +24,9 @@ async def main():
         await bot.load_extension("cogs.economy")
         await bot.load_extension("cogs.events")
         await bot.load_extension("cogs.moderation")
+        await bot.load_extension("cogs.casino")
         await bot.start(TOKEN)
 
 
 asyncio.run(main())
+

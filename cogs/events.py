@@ -12,6 +12,9 @@ class Events(commands.Cog):
     
     @commands.Cog.listener()
     async def on_ready(self):
+
+        await self.bot.tree.sync()
+        
         print('Synchronized')
 
 
