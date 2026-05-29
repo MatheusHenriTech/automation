@@ -25,6 +25,7 @@ async def main():
         await bot.load_extension("cogs.events")
         await bot.load_extension("cogs.moderation")
         await bot.load_extension("cogs.casino")
+        await bot.load_extension("cogs.modals")
         await bot.start(TOKEN)
 
 
