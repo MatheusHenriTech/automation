@@ -14,11 +14,19 @@ class Casino(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name='open_treasure')
-    async def open_treasure(self, interaction: discord.Interaction, coins:int):
+    @app_commands.command(name='bet', description='Bet your coins in the casino')
+    async def bet(self, interaction: discord.Interaction, coins:int):
 
         with Session() as session:
             usuario = get_user(session, interaction.user)
+
+            if coins <= 0:
+                await interaction.response.send_message("bet value must be greater than 0")
+                return
+            
+            if usuario.coins < coins:
+                await interaction.response.send_message("You don't have enough coins to place this bet", ephemeral=True)
+                return
 
             options = [
                 ("Lost it all",0),
@@ -37,7 +45,7 @@ class Casino(commands.Cog):
 
             gain = int(coins * multiplicator)
 
-            await interaction.response.send_message(f"Sorte ou azar?, {message } você transformou {coins} coins em {gain} coins")
+            await interaction.response.send_message(f"You just turned your {coins} bet coins into {gain} coins.")
 
             usuario.coins -= coins
             usuario.coins += gain
